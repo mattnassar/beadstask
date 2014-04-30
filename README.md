@@ -1,4 +1,4 @@
 beadstask
 =========
 
-Repository for beadstask taskcode ONLY
+Repository for beadstask
