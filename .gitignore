@@ -2,5 +2,5 @@
 
 *.xlsx
 
-beadstaskdata/*.mat
-revisedbeadsdata/*.mat
+beadstaskdata/*
+revisedbeadsdata/*
