@@ -68,7 +68,7 @@ trialData.hiValSide=dataStruct.curr_rewCorrRight>dataStruct.curr_rewCorrLeft;
 trialData.betRight=dataStruct.curr_choice==2;
 trialData.infoButtonSide=dataStruct.infoButtonSide;
 
-
+%keyboard
 inT=dataStruct.startTime;
 %keyboard
 timingData=struct;
@@ -81,12 +81,18 @@ else
     timingData.infoOn  =  timingData.infoOff-1.0776;
 end
 timingData.choiceOn      =dataStruct.preChoiceOn-inT;
-timingData.feedbackOn    =dataStruct.fdbkOn-inT;
+timingData.feedbackOn    =dataStruct.fdbkOn-inT;     % now defunct bc there is no feedback
 timingData.choiceOff     =dataStruct.preChoiceOff-inT;
-timingData.feedbackOff   =dataStruct.fdbkOff-inT;
+timingData.feedbackOff   =dataStruct.fdbkOff-inT;   % this is now defunct bc there is no feedback
 timingData.trialStart    =dataStruct.trialStartTime-inT;
 timingData.betOn         =dataStruct.betOn-inT;
 timingData.tooSlow       =dataStruct.tooSlowOnTime;
+
+% new timestamps added by Arthur ~ 07/14/14
+timingData.betOn2        =dataStruct.enterDecTime-inT; % ok, this occurs right before betOn
+timingData.freeDrawOn    =dataStruct.freeDrawOn-inT;
+timingData.freeDrawOff   =dataStruct.freeDrawOff-inT; % this is the same as betOn
+timingData.betChoiceTime =dataStruct.betchoicetime-inT; % when subject actually presses button indicating bet
 
 
 

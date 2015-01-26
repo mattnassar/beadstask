@@ -38,9 +38,15 @@ for i = 1:length(allNames)
             a=a';
         end
         
+        try
         % concatanate
         eval(sprintf('allBehav.%s = cat(1, a, b);', char(allNames(i))));
+        catch
+            keyboard
+        end
         
+            
+            
     end
     
 end

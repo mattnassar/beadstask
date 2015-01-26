@@ -5,15 +5,40 @@
 
 %% get everything we need on the path.
 clear classes
-cd /Users/mattnassar/Dropbox/BeadsTaskCode/beadsTask
-path(path, 'taskCode')
+
+rootDir='/Users/mattnassar/matt_work_stuff/Matt/m_files/beadsTask/'
+cd(rootDir);
+addpath(genpath(rootDir))
+
 
 
 %% load subject data
-subFileDir='/Users/mattnassar/Dropbox/BeadsTaskCode/BeadTaskData''';
-subNames={'DZ572',	'HE3515',	'KQ3513',	'LT3516',	'LZ3512',	'NN3511', ...
-  'OK547',	'SI3517',   'EO3518', 	'HU2138',	'LL2026',	'LX1803', ...
-  'MC1906',	'NS969',	'QB2027',	'TA3514'};
+subFileDir='/Users/mattnassar/Dropbox/BeadsTaskCode/BeadsTask4';
+
+% DATA FROM OUT OF SCANNER PILOT FOR FORCED DRAW VERSION:
+subNames={'BE1829',	'KK1101',	'testbug'};
+
+
+% DATA FROM INITIAL fMRI PILOT:
+% subNames={'DZ572',	'HE3515',	'KQ3513',	'LT3516',	'LZ3512',	'NN3511', ...
+%   'OK547',	'SI3517',   'EO3518', 	'HU2138',	'LL2026',	'LX1803', ...
+%   'MC1906',	'NS969',	'QB2027',	'TA3514'};
+
+% loop through each subject and load data, store in "allSubjData" structure
+% and save that structure so we don't need to use this slow loading code
+% again.
+for i = 1:length(subNames)
+    fileName=fullfile(subFileDir, subNames{i});
+    [allData]=beadTaskDataLoader_mrn(fileName);
+    
+    % put data structures in a bigger structure including all subjects.
+    eval(sprintf('allSubjData.%s=allData;', subNames{i}));
+    
+    % beadTaskDataLoader changes directories, so lets go back manually.
+    cd(subFileDir)
+end
+
+
 
 
 % loop through each subject and load data, store in "allSubjData" structure
@@ -30,26 +55,9 @@ for i = 1:length(subNames)
     cd /Users/mattnassar/Dropbox/BeadsTaskCode/beadsTask
 end
 
-% load pilot subject data into the mix. 
 
 
-subFileDir='/Users/mattnassar/Dropbox/BeadsTaskCode/BeadTaskPilotData''';
-subNames={'BJ2376',	'BX2031',	'DT2005',	'NC3509',	'SQ3510'};
 
-
-% loop through each subject and load data, store in "allSubjData" structure
-% and save that structure so we don't need to use this slow loading code
-% again.
-for i = 1:length(subNames)
-    fileName=fullfile(subFileDir, subNames{i});
-    [allData]=beadTaskDataLoader_mrn(fileName);
-    
-    % put data structures in a bigger structure including all subjects.
-    eval(sprintf('allSubjData.%s=allData;', subNames{i}));
-    
-    % beadTaskDataLoader changes directories, so lets go back manually.
-    cd /Users/mattnassar/Dropbox/BeadsTaskCode/beadsTask
-end
 save allSubjData.mat allSubjData
 
 
@@ -64,12 +72,13 @@ save allSubjData.mat allSubjData
 
 % load allSubjData.mat
 % subNames=fieldnames(allSubjData);
-% 
-exSub='NN3511';
+
+
+exSub='BE1829';
 eval(sprintf('gameNames=fieldnames(allSubjData.%s);', exSub));
 gameCat=1:length(gameNames);
-allBlocks=fieldnames(allSubjData.NN3511.scan);
-allNames=fieldnames(allSubjData.NN3511.scan.block1.statusData);
+allBlocks=fieldnames(allSubjData.BE1829.scan);
+allNames=fieldnames(allSubjData.BE1829.scan.block1.statusData);
 
 
 

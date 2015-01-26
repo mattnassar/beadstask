@@ -16,11 +16,11 @@ infoData=getInfoValueFromBlock(trialData)
 %modDrawActualKLdivergence;
 
 choiceNames={'modTrialInfValue', 'modExpMutInfGain', 'modTrialStateValue'};
-infoNames={'modDrawActualMutInfoGain', 'modDrawActualValueGain', 'modDrawActualKLdivergence', 'house'};
+infoNames={'modDrawActualMutInfoGain', 'modDrawActualValueGain', 'modDrawActualKLdivergence'};   % 'house'
 
 choicePhaseVars_raw=[infoData.modTrialInfValue infoData.modExpMutInfGain infoData.modTrialStateValue];
 choicePhaseVars=zscore(choicePhaseVars_raw);
-infoPhaseVars_raw=[infoData.modDrawActualMutInfoGain infoData.modDrawActualValueGain infoData.modDrawActualKLdivergence infoData.infoType infoData.stimInf];
+infoPhaseVars_raw=[infoData.modDrawActualMutInfoGain infoData.modDrawActualValueGain infoData.modDrawActualKLdivergence];   %  infoData.infoType
 
 
 % mean center choice phase modulator regressors:
@@ -35,12 +35,11 @@ t=0;
 allTrialDraws=nan(ll, 1);
 infoOn=timingData.infoOn; 
 choiceOn=timingData.choiceOn; 
-feedbackOn=timingData.feedbackOn; 
+decTimeOn=timingData.betOn; 
 infoOff=timingData.infoOff;
 choiceOff=timingData.choiceOff;
-feedbackOff=timingData.feedbackOff;
-expDuration=timingData.feedbackOff-timingData.trialStart;
-
+decTimeOff=timingData.betChoiceTime;
+%expDuration=timingData.feedbackOff-timingData.trialStart;
 
 
 %% mean center info modulator values JUST on info trials
@@ -67,11 +66,6 @@ allRegModVars.choice_raw.names={'choice_raw'};
 
 
 
-
-
-
-
-
 t=600
 tr=2.5;  % how long will it take to scan the entire brain once
 numTrs=ceil(t./tr)+5 ; % how many TRs will we need total to cover the entire task block
@@ -87,8 +81,10 @@ choiceModRegs=zeros(length(allTrs), size(choicePhaseVars, 2));
 infoPhaseVars(~isfinite(infoPhaseVars))=0;
 
 
+%
+
 for i = 1:(ll)
-    
+   
     % run through choice phase (by steps of inc) and simulate BOLD responses
     trialReg=zeros(size(allTrs))';
     for j = choiceOn(i):inc:choiceOff(i)
@@ -122,8 +118,8 @@ for i = 1:(ll)
         repmat(trialReg, 1, size(infoPhaseVars, 2)); % multiply it by trial variables to get info phase modulator resopnses
 
 
-   % now do the exact same process, Feedback
-    for j = feedbackOn(i):inc:feedbackOff(i)
+   % now do the exact same process, Left Right decision
+    for j = decTimeOn(i):inc:decTimeOn(i)+2 %decTimeOff(i)
         ts=allTrs-j;
         newFdbkResponse=fast_fslgamma(ts,6,3);
         trialFeedbackReg=trialFeedbackReg+newFdbkResponse;
@@ -131,7 +127,7 @@ for i = 1:(ll)
 end
 
 
-allNames=[{'ChoiceReg', 'infoReg', 'feedbackOn'}, choiceNames, infoNames];
+allNames=[{'ChoiceReg', 'infoReg', 'decTimeOn'}, choiceNames, infoNames];
 allConvRegs=[(choiceReg) (infoReg) trialFeedbackReg (choiceModRegs) (feedbackRegs)];
 zAllConvRegs=zscore(allConvRegs);
 
@@ -139,30 +135,43 @@ regData.allConvRegs=allConvRegs;
 regData.allConvNAmes=allNames;
 
 
-
-
-% keyboard
-
+% 
+%  keyboard;
+%  
+ 
+ 
 %keyboard
-% %Diagnostics.
-% % look at timing regressors:
-% hold on
-% plot(allTrs, (choiceReg), 'g')
-% plot(allTrs, infoReg, 'r')
-% plot(allTrs, trialFeedbackReg, 'b')
-% xlim([0 100])
-% set(gca, 'box', 'off')
+%Diagnostics.
+% look at timing regressors:
+figure
+hold on
+plot(allTrs, (choiceReg), 'g')
+plot(allTrs, infoReg, 'r')
+plot(allTrs, trialFeedbackReg, 'b')
+xlim([200 300])
+set(gca, 'box', 'off')
+
+corr([choiceReg, infoReg, trialFeedbackReg])
+
+% 
+% 
+% legend('trial on', 'info on', 'feedback on')
+% 
+% 
 % saveas(gcf, 'allRegsOverTime.eps', 'epsc2')
-% close all
+% %close all
 % % % 
+% 
+% 
+% figure
 % rrr=corr([choiceReg(5:end) infoReg(5:end) trialFeedbackReg(5:end)])
 % a=imagesc(rrr)
 % set(gca, 'clim', [-1 1])
 % colorbar
 % saveas(gcf, 'corrMatForArthur.eps', 'epsc2')
-% close all
-% 
-% 
+% %close all
+
+
 % 
 % plot(choiceReg(10:end), trialFeedbackReg(10:end), '.')
 % ylabel('FeedbackTimingReg')

@@ -5,7 +5,6 @@ function selBehav=selBehav(behav, sel, padNan)
 %% array will be returned as nan.  Otherwise a non-existent selection will
 %% lead to crash...
 
-
 if nargin<3||isempty(padNan)
     padNan=0;
 end

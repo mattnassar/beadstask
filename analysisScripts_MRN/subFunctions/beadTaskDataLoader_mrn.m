@@ -1,6 +1,6 @@
 function [allData, p, t] = beadTaskDataLoader_mrn(dirandfile)
 
-[path, subjID]=fileparts(dirandfile)
+[~, subjID]=fileparts(dirandfile)
 
 
 everything=dir(fullfile(dirandfile));
@@ -33,7 +33,7 @@ for q = 1:length(fn)
             else
                 keyboard
             end
-        elseif strcmp(matcher, 'noDra')
+        elseif strcmp(matcher, 'noDraw')
             matcher = tempstring(length(subjID)+19);
             if strcmp(matcher, '1')
                 % no draw block 1
