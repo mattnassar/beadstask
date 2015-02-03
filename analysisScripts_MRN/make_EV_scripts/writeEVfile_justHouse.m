@@ -8,7 +8,7 @@ function [regNames]=writeEVfile_justHouse(timingData, allRegModVars, evFileName)
 % be perfectly aligned for FSL.
 
 % however, we may want to drop a few frames at the beginning of the scan.
-dropFrames=0;
+dropFrames=5;
 TR=1.5;
 timeDropped=dropFrames.*TR;
 
@@ -48,6 +48,16 @@ timings(4).on           =timingData.tooSlow;
 timings(4).duration     =1;
 timings(4).name         ='tooSlow';
 
+
+% % model extra button pushes. 
+% timings(5).duration     =.1;
+% timings(5).name         ='extraInfButtonPress';
+% timings(5).on           =[]
+% for i = 1:ll
+%     trialExPush=timingData.extraButtonPush{i};
+%     timings(5).on=[ timings(5).on; trialExPush'];
+% end
+% timings(5).on=timings(5).on(isfinite(timings(5).on));
 
 
 k=1;

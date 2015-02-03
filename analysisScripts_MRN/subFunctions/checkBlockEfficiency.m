@@ -1,57 +1,16 @@
 function [numSubjs, uniqueVar, timingData, trialData, regData, allRegModVars]=checkBlockEfficiency(dataStruct)
 
+% This function serves a few purposes. 
 
-%% TESTING THE QUALITY OF PARAMETERS DIRECTLY FROM FMRI BEADS TASK
+% 1) it takes a raw dataStruct and extracts timing data and puts it in a
+% timingData structure.
+
+% 2) extracts trialData and puts it in a trialData structure
+
+% 3) it uses both of these things to compute model efficiency. 
 
 
 
-
-
-
-
-% clear classes
-% cd ~/Dropbox/BeadsTaskCode/Minerva/
-% % load Minerva_realScannerGame1__2_blk201312191148beadsTaskData.mat
-% % load Minerva_realScannerGame1__1_blk201312191138beadsTaskData.mat
-% 
-% 
-% % load Minerva_realScannerGame2__1_blk20131219132beadsTaskData.mat
-% % this one has some issues with isolating "expected" value timing.
-% 
-% 
-%  load Minerva_realScannerGame2__2_blk20131219137beadsTaskData.mat
-% % 
-% 
-% 
-% allNames=fieldnames(statusData);
-% path(path, '/Users/mattnassar/matt_work_stuff/Matt/m_files/beadsTask/taskCode');
-% 
-% 
-% allN={statusData.name}
-% goodStatus=~cellfun(@isempty, allN)
-% 
-% statusData=statusData(goodStatus)
-% 
-% 
-% mkdir /Users/mattnassar/matt_work_stuff/Matt/m_files/beadsTask/figures
-% cd /Users/mattnassar/matt_work_stuff/Matt/m_files/beadsTask/figures
-% 
-% dataStruct.curr_trialInfList={statusData.curr_trialInfList}
-% 
-% for j = 1:length(allNames)
-%     % get data from a field
-%     if (isnumeric(eval(sprintf('statusData(1).%s', char(allNames(j)))))||...
-%             islogical(eval(sprintf('statusData(1).%s', char(allNames(j))))))...
-%             & length((eval(sprintf('statusData(1).%s', char(allNames(j))))))==1;
-%         eval(sprintf('dataStruct.%s=cat(1, statusData.%s)', char(allNames(j)), char(allNames(j))));
-%     elseif (isnumeric(eval(sprintf('statusData(1).%s', char(allNames(j)))))||...
-%             islogical(eval(sprintf('statusData(1).%s', char(allNames(j))))))...
-%             & length((eval(sprintf('statusData(1).%s', char(allNames(j))))))>1;
-%         eval(sprintf('dataStruct.%s={statusData.%s}', char(allNames(j)), char(allNames(j))));
-%     end
-% end
-% 
-% dataStruct=straightStruct(dataStruct);
 
 
 ll=length(dataStruct.infoButtonSide);
@@ -73,13 +32,13 @@ inT=dataStruct.startTime;
 %keyboard
 timingData=struct;
 timingData.infoOff=dataStruct.infoOn-inT;      % this was event was mistakenly named
-if isfield(dataStruct, 'realInfoOn')
-    timingData.infoOn=dataStruct.realInfoOn-inT;
-else
+% if isfield(dataStruct, 'realInfoOn')
+%     timingData.infoOn=dataStruct.realInfoOn-inT;
+% else
     % if we don't have a timestamp, compute it.
     disp('Computing infoOn timestamp based on info off')
     timingData.infoOn  =  timingData.infoOff-1.0776;
-end
+% end
 timingData.choiceOn      =dataStruct.preChoiceOn-inT;
 timingData.feedbackOn    =dataStruct.fdbkOn-inT;     % now defunct bc there is no feedback
 timingData.choiceOff     =dataStruct.preChoiceOff-inT;

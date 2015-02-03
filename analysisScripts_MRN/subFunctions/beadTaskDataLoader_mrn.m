@@ -1,70 +1,58 @@
 function [allData, p, t] = beadTaskDataLoader_mrn(dirandfile)
 
-[~, subjID]=fileparts(dirandfile)
+[~, subjID]=fileparts(dirandfile);
 
 
 everything=dir(fullfile(dirandfile));
+%keyboard
 fn={everything.name};
 allData = struct;
 cd(dirandfile);
+
+
+fileList={'noDraw_noBead_',   'noDraw_asym_cond_', 'symm_cond', 'game1_1', ...
+    'game1_2','scannerGame1__1', 'scannerGame1__2',  ...
+    'realScannerGame0__1', 'realScannerGame0__2', ...
+    'realScannerGame1', 'realScannerGame2'};
+
+
 for q = 1:length(fn)
     if length(fn{q}) >20
-        tempstring = fn{q};
-        matcher = tempstring(length(subjID)+2:length(subjID)+6);
-        if strcmp(matcher, 'game1')
-            matcher = tempstring(length(subjID)+8);
-            if strcmp(matcher, '1')
-                % game 1 block 1
-                allData.game1.block1 = load(tempstring);
-            elseif strcmp(matcher, '2')
-                % game 1 block 2
-                allData.game1.block2 = load(tempstring);
+        
+        if ~isempty(strfind(fn{q}, fileList{1}))
+            if exist('allData')&&isfield(allData, 'noDraw_noBead')&&isfield(allData.noDraw_noBead, 'block1')
+                allData.noDraw_noBead.block2 = load(fn{q}); % if there is already a block 1, then this is block 2. 
             else
-                keyboard
+                allData.noDraw_noBead.block1 = load(fn{q}); % first block first...
             end
-        elseif strcmp(matcher, 'game2')
-            matcher = tempstring(length(subjID)+8);
-            if strcmp(matcher, '1')
-                % game 2 block 1
-                allData.game2.block1 = load(tempstring);
-            elseif strcmp(matcher, '2')
-                % game 2 block 2
-                allData.game2.block2 = load(tempstring);
+        elseif ~isempty(strfind(fn{q}, fileList{2}))
+            disp('no draw!')
+            if exist('allData')&&   isfield(allData, 'noDraw_asym')  && isfield(allData.noDraw_asym, 'block1')
+                allData.noDraw_asym.block2 = load(fn{q}); % if there is already a block 1, then this is block 2. 
             else
-                keyboard
+                allData.noDraw_asym.block1 = load(fn{q}); % first block first...
             end
-        elseif strcmp(matcher, 'noDraw')
-            matcher = tempstring(length(subjID)+19);
-            if strcmp(matcher, '1')
-                % no draw block 1
-                allData.nodraw.block1 = load(tempstring);
-            elseif strcmp(matcher, '2')
-                % no draw block 2
-                allData.nodraw.block2 = load(tempstring);
-            else
-                keyboard
-            end
-        elseif strcmp(matcher, 'scann')
-            matcher = tempstring(length(subjID)+16);
-            if strcmp(matcher, '1')
-                % scan block 1
-                allData.scan.block1 = load(tempstring);
-            elseif strcmp(matcher, '2')
-                % scan block 2
-                allData.scan.block2 = load(tempstring);
-            else
-                keyboard
-            end   
-        elseif strcmp(matcher, 'realS')
+        elseif ~isempty(strfind(fn{q}, fileList{3}))
+                allData.game1.symm_cond = load(fn{q});
+        elseif ~isempty(strfind(fn{q}, fileList{4}))
+                allData.game1.block1 = load(fn{q});
+        elseif ~isempty(strfind(fn{q}, fileList{5}))
+                allData.game1.block2 = load(fn{q});
+        elseif ~isempty(strfind(fn{q}, fileList{6}))
+                allData.scanWarmup.block1=load(fn{q});
+        elseif ~isempty(strfind(fn{q}, fileList{7}))
+                allData.scanWarmup.block2=load(fn{q});
+        elseif ~isempty(strfind(fn{q}, fileList{8}))
+                allData.scanerGame.block1=load(fn{q});
+        elseif ~isempty(strfind(fn{q}, fileList{9}))
+                allData.scanerGame.block2=load(fn{q});       
+        elseif ~isempty(strfind(fn{q}, fileList{10})) | ~isempty(strfind(fn{q}, fileList{11}))
             label='realScannerGame';
-            labelStart=strfind(tempstring, label);
+            labelStart=strfind(fn{q}, label);
             labelLength=length(label);
-            eval(sprintf('allData.%s.block%s = load(tempstring)', tempstring(labelStart:labelStart+labelLength), tempstring(labelStart+labelLength+3)));                 
-        elseif strcmp(matcher, 'symm_')
-            % symm condition
-            allData.symm.block1 = load(tempstring);
+            eval(sprintf('allData.%s.block%s = load(fn{q})', fn{q}(labelStart:labelStart+labelLength), fn{q}(labelStart+labelLength+3)));                 
         else
-            keyboard
+            %keyboard
         end
     end
 end

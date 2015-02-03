@@ -8,7 +8,7 @@ function [regNames timings]=writeEVfile(timingData, allRegModVars, evFileName);
 % be perfectly aligned for FSL.
 
 % however, we may want to drop a few frames at the beginning of the scan.
-dropFrames=0;
+dropFrames=5;
 TR=1.5;
 timeDropped=dropFrames.*TR;
 ll=length(allRegModVars.info.vals);
@@ -16,12 +16,17 @@ ll=length(allRegModVars.info.vals);
 % use modulator regressors, each timing variable must be matched in name to
 % the fieldnames of the allRegModVars structure.
 
-% the goal of this model is to look at info related variables directly, and
-% since these tend to correlate within block with the house/face variable,
-% i'll not include that variable in this model.
-allRegModVars.info.vals=(allRegModVars.info.vals(:,1:end-1))
-allRegModVars.info.names=allRegModVars.info.names(1:end-1);
 
+% apparently the last allRegModVars.info column used to be the house/face
+% variable. that is currently not the case though...
+
+% % the goal of this model is to look at info related variables directly, and
+% % since these tend to correlate within block with the house/face variable,
+% % i'll not include that variable in this model.
+% allRegModVars.info.vals=(allRegModVars.info.vals(:,1:end-1))
+% allRegModVars.info.names=allRegModVars.info.names(1:end-1);
+% 
+%keyboard
 
 timings(1).on          =timingData.choiceOn;
 timings(1).duration    =nanmedian(timingData.choiceOff-timingData.choiceOn);
@@ -32,27 +37,29 @@ timings(2).duration    =nanmedian(timingData.infoOff-timingData.infoOn);
 timings(2).name        ='info';
 
 timings(3).on           =timingData.betOn;
-timings(3).duration     =nanmedian  (timingData.feedbackOn- timingData.betOn);
+timings(3).duration     =nanmedian  (timingData.betChoiceTime- timingData.betOn);
 timings(3).name        ='bet';
 
 timings(4).on           =timingData.tooSlow;
 timings(4).duration     =1;
 timings(4).name         ='tooSlow';
 
-timings(5).on           =timingData.infoChoiceMade;
-timings(5).duration     =.1;
-timings(5).name         ='infButtonPress';
+% IM NOT SURE WHAT THIS IS ALL ABOUT... NOW THERE IS NO LONGER A CHOICE
+% REGARDING WHETHER THE SUBJECT WANTS INFO... SO LETS NOT WORRY ABOUT IT. 
+% timings(5).on           =timingData.infoChoiceMade;
+% timings(5).duration     =.1;
+% timings(5).name         ='infButtonPress';
 
 
 % model extra button pushes. 
-timings(6).duration     =.1;
-timings(6).name         ='extraInfButtonPress';
-timings(6).on           =[]
+timings(5).duration     =.1;
+timings(5).name         ='extraInfButtonPress';
+timings(5).on           =[]
 for i = 1:ll
     trialExPush=timingData.extraButtonPush{i};
-    timings(6).on=[ timings(6).on; trialExPush'];
+    timings(5).on=[ timings(5).on; trialExPush'];
 end
-timings(6).on=timings(6).on(isfinite(timings(6).on));
+timings(5).on=timings(5).on(isfinite(timings(5).on));
 
 
 
@@ -95,7 +102,7 @@ for i = 1:length(timings)
             disp('houston, we have a problem');
             keyboard;
         end
-
+        %keyboard
         % run through each modulator of this epoch and create a file.
         for j = 1:length(timeMods.names)
             featTxt=[timings(i).on(sel)-timeDropped, ...              % onset

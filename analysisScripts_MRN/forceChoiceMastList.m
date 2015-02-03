@@ -1,8 +1,6 @@
 %% Code for Beads task behavioral analysis and EV file creation.
 
 
-
-
 %% get everything we need on the path.
 clear classes
 
@@ -13,25 +11,9 @@ addpath(genpath(rootDir))
 
 
 %% load subject data
-subFileDir='/Users/mattnassar/Dropbox/BeadsTaskCode/BeadsTask4';
+subFileDir='/Users/mattnassar/Dropbox/beadstaskcode/forceChoiceBeads';
+subNames={'IL3520',	'LL3555',	'TK3556','TQ3543'	}
 
-% DATA FROM OUT OF SCANNER PILOT FOR FORCED DRAW VERSION:
-% subNames={'BE1829',	'KK1101',	'testbug'};
-
-
-
-
-
-
-
-
-
-
-
-% DATA FROM INITIAL fMRI PILOT:
-% subNames={'DZ572',	'HE3515',	'KQ3513',	'LT3516',	'LZ3512',	'NN3511', ...
-%   'OK547',	'SI3517',   'EO3518', 	'HU2138',	'LL2026',	'LX1803', ...
-%   'MC1906',	'NS969',	'QB2027',	'TA3514'};
 
 % loop through each subject and load data, store in "allSubjData" structure
 % and save that structure so we don't need to use this slow loading code
@@ -50,26 +32,6 @@ end
 
 
 
-% loop through each subject and load data, store in "allSubjData" structure
-% and save that structure so we don't need to use this slow loading code
-% again.
-for i = 1:length(subNames)
-    fileName=fullfile(subFileDir, subNames{i});
-    [allData]=beadTaskDataLoader_mrn(fileName);
-    
-    % put data structures in a bigger structure including all subjects.
-    eval(sprintf('allSubjData.%s=allData;', subNames{i}));
-    
-    % beadTaskDataLoader changes directories, so lets go back manually.
-    cd /Users/mattnassar/Dropbox/BeadsTaskCode/beadsTask
-end
-
-
-
-
-save allSubjData.mat allSubjData
-
-
 
 
 
@@ -83,11 +45,11 @@ save allSubjData.mat allSubjData
 % subNames=fieldnames(allSubjData);
 
 
-exSub='BE1829';
+exSub='IL3520';
 eval(sprintf('gameNames=fieldnames(allSubjData.%s);', exSub));
 gameCat=1:length(gameNames);
-allBlocks=fieldnames(allSubjData.BE1829.scan);
-allNames=fieldnames(allSubjData.BE1829.scan.block1.statusData);
+allBlocks=fieldnames(allSubjData.IL3520.realScannerGame1);
+allNames=fieldnames(allSubjData.IL3520.realScannerGame1.block1.statusData);
 
 
 
@@ -119,7 +81,11 @@ allNames=fieldnames(allSubjData.BE1829.scan.block1.statusData);
 
 
 %% load all scanner data
-scannedSubjs={'HU2138', 'LX1803', 'NS969', 'OK547', 'QB2027', 'TA3514'};
+scannedSubjs=subNames
+
+%scannedSubjs={'HU2138', 'LX1803', 'NS969', 'OK547', 'QB2027', 'TA3514'};
+
+
 blkNames={'realScannerGame1.block1', 'realScannerGame1.block2', 'realScannerGame2.block1', 'realScannerGame2.block2'};
 evFolder='/Users/mattnassar/Dropbox/BeadsTaskCode/beadsTask/EVs';
 justHouseEvFolder='/Users/mattnassar/Dropbox/BeadsTaskCode/beadsTask/justHouse_EVs';
@@ -140,15 +106,8 @@ for i = 1:length(scannedSubjs)
         % get model based trial regressors.
         [numSubjs, uniqueVar, timingData, trialData, regData, allRegModVars]...
             =checkBlockEfficiency(data);
-        data.infRT=data.infChoiceTime-data.preChoiceOff;
+        data.infRT=data.infChoiceTime-data.preChoiceOff; % this is no longer relevant...
 
-        % get rid of "surprise" regressor for EV files...
-        allRegModVars.info.vals=allRegModVars.info.vals(:,1:end-1);
-
-%         
-%         sel=isfinite(allRegModVars.info_raw.vals(:,1))
-%         corr(allRegModVars.info_raw.vals(sel,:))
-% 
 
         % compute bead diff (high val beads - low value beads)
         if unique(trialData.hiValSide)==0
@@ -157,11 +116,20 @@ for i = 1:length(scannedSubjs)
             beadDiff{i,j}=trialData.startRight-trialData.startLeft;
         end
 
-        % make EV file.
         
+        % ok, i'm going to remove the "expected mutual information gain" as
+        % i think that quantitiy is correlated with the actual kl
+        % divergence
+        
+        allRegModVars.choice.vals= allRegModVars.choice.vals(:,[1, 3]);
+        allRegModVars.choice.names=allRegModVars.choice.names([1,3]);
+        
+        
+        % make EV file
         evFileName=fullfile(evFolder, [scannedSubjs{i} '_EV_run' num2str(j) '_']);
         [regNames, timings]=writeEVfile(timingData, allRegModVars, evFileName);
-       
+ 
+        
         evFileName=fullfile(justHouseEvFolder, [scannedSubjs{i} '_EV_run' num2str(j) '_']);
         [justHouse_regNames]=writeEVfile_justHouse(timingData, allRegModVars, evFileName);
        
@@ -177,6 +145,9 @@ for i = 1:length(scannedSubjs)
         allModulators{i,j}=allRegModVars;
     end
 end
+
+disp(regNames');
+
 disp('done making EVs etc')
 %%%%%%%%%%%%%%%%%%%%% ROI Analysis %%%%%%%%%%%%%%%%%%%%%
 
