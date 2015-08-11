@@ -10,10 +10,11 @@ function [numSubjs, uniqueVar, timingData, trialData, regData, allRegModVars]=ch
 % 3) it uses both of these things to compute model efficiency. 
 
 
-
+%keyboard
 
 
 ll=length(dataStruct.infoButtonSide);
+trialData.trialNum=dataStruct.trialNum
 trialData.maxUrnProb=dataStruct.curr_maxUrnProb;
 trialData.startLeft=dataStruct.curr_start_tokensLeft;
 trialData.startRight=dataStruct.curr_start_tokensRight;
@@ -45,13 +46,14 @@ timingData.choiceOff     =dataStruct.preChoiceOff-inT;
 timingData.feedbackOff   =dataStruct.fdbkOff-inT;   % this is now defunct bc there is no feedback
 timingData.trialStart    =dataStruct.trialStartTime-inT;
 timingData.betOn         =dataStruct.betOn-inT;
-timingData.tooSlow       =dataStruct.tooSlowOnTime;
+timingData.tooSlow       =dataStruct.tooSlowOnTime-inT;
 
 % new timestamps added by Arthur ~ 07/14/14
-timingData.betOn2        =dataStruct.enterDecTime-inT; % ok, this occurs right before betOn
-timingData.freeDrawOn    =dataStruct.freeDrawOn-inT;
-timingData.freeDrawOff   =dataStruct.freeDrawOff-inT; % this is the same as betOn
-timingData.betChoiceTime =dataStruct.betchoicetime-inT; % when subject actually presses button indicating bet
+timingData.betOn2         =dataStruct.enterDecTime-inT; % ok, this occurs right before betOn
+timingData.freeDrawOn     =dataStruct.freeDrawOn-inT;
+timingData.freeDrawOff    =dataStruct.freeDrawOff-inT; % this is the same as betOn
+timingData.betChoiceTime  =dataStruct.betchoicetime-inT; % when subject actually presses button indicating bet
+timingData.forceChoiceTime=dataStruct.forceChoiceTime-inT; % when subject actually presses button indicating bet
 
 
 

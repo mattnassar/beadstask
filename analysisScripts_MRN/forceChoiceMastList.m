@@ -1,18 +1,36 @@
 %% Code for Beads task behavioral analysis and EV file creation.
 
 
+% 5-19-15
+
+% changed directories for data... as apparently the data has been dumped in
+% a different directory. 
+
+
+% 2-16-15
+% setup a new script for creating EVs that include a couple of real pretty
+% obvious motor and visual controls (writeEVfile_fullModel.m)
+
+
+
+
 %% get everything we need on the path.
 clear classes
 
-rootDir='/Users/mattnassar/matt_work_stuff/Matt/m_files/beadsTask/'
+rootDir='/Users/mattnassar/matt_work_stuff/Matt/m_files/beadstask/analysisScripts_MRN'
 cd(rootDir);
 addpath(genpath(rootDir))
 
+addpath(genpath(rootDir))
 
-
+infoPath='/Users/mattnassar/Dropbox/BeadsTaskCode/EVs/infoTimes/'
 %% load subject data
-subFileDir='/Users/mattnassar/Dropbox/beadstaskcode/forceChoiceBeads';
-subNames={'IL3520',	'LL3555',	'TK3556','TQ3543'	}
+subFileDir='/Users/mattnassar/Dropbox/beadstaskcode/BeadsTask5data';
+figDir='/Users/mattnassar/Dropbox/BeadsTaskCode/figures/'
+
+subNames={'CC528', 'FL1136', 'FT3594', 'IA3593', 'IL3520',	'LL3555', ...
+    'NS950', 'OF3592', 'TK3556', 'TQ3543', 'TQ3600'}
+
 
 
 % loop through each subject and load data, store in "allSubjData" structure
@@ -30,10 +48,12 @@ for i = 1:length(subNames)
 end
 
 
+cd(figDir)
 
 
-
-
+TR=1.5
+TR_perBlock=395;
+blkTime=TR.*TR_perBlock;
 
 % Get data in favorite format?
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -87,11 +107,17 @@ scannedSubjs=subNames
 
 
 blkNames={'realScannerGame1.block1', 'realScannerGame1.block2', 'realScannerGame2.block1', 'realScannerGame2.block2'};
-evFolder='/Users/mattnassar/Dropbox/BeadsTaskCode/beadsTask/EVs';
-justHouseEvFolder='/Users/mattnassar/Dropbox/BeadsTaskCode/beadsTask/justHouse_EVs';
+evFolder='/Users/mattnassar/Dropbox/BeadsTaskCode/EVs/fullModel_EVs_2';
+justHouseEvFolder='/Users/mattnassar/Dropbox/BeadsTaskCode/EVs/justHouse_EVs';
+infoCoeffEvFolder='/Users/mattnassar/Dropbox/BeadsTaskCode/EVs/trialInfoEVs_EVs';
+
 
 mkdir(justHouseEvFolder)
 mkdir(evFolder)
+
+% scan protocol info:
+TR=1.5;
+numTRs=400;
 
 
 % loop through all subjects. Make EV files for each run, for each subject.
@@ -107,48 +133,89 @@ for i = 1:length(scannedSubjs)
         [numSubjs, uniqueVar, timingData, trialData, regData, allRegModVars]...
             =checkBlockEfficiency(data);
         data.infRT=data.infChoiceTime-data.preChoiceOff; % this is no longer relevant...
-
-
+        close all
+        
         % compute bead diff (high val beads - low value beads)
         if unique(trialData.hiValSide)==0
             beadDiff{i,j}=trialData.startLeft-trialData.startRight;
         else
             beadDiff{i,j}=trialData.startRight-trialData.startLeft;
         end
-
+        
         
         % ok, i'm going to remove the "expected mutual information gain" as
         % i think that quantitiy is correlated with the actual kl
         % divergence
         
-        allRegModVars.choice.vals= allRegModVars.choice.vals(:,[1, 3]);
-        allRegModVars.choice.names=allRegModVars.choice.names([1,3]);
+        allRegModVars.choice.vals= [data.curr_start_tokensRight+data.curr_start_tokensLeft, ...
+            data.curr_start_tokensRight-data.curr_start_tokensLeft];
+        allRegModVars.choice.vals=meanCentX(allRegModVars.choice.vals);
+        allRegModVars.choice.names={'beadTotal', 'beadDifference'};
         
+        allRegModVars.infOnRight=trialData.infoButtonSide;
+        
+        %         % make EV file
+        %         evFileName=fullfile(evFolder, [scannedSubjs{i} '_EV_run' num2str(j) '_']);
+        %         [regNames, timings]=writeEVfile(timingData, allRegModVars, evFileName);
         
         % make EV file
         evFileName=fullfile(evFolder, [scannedSubjs{i} '_EV_run' num2str(j) '_']);
-        [regNames, timings]=writeEVfile(timingData, allRegModVars, evFileName);
- 
+        [regNames, timings]=writeEVfile_fullModel(timingData, allRegModVars, evFileName);
         
-        evFileName=fullfile(justHouseEvFolder, [scannedSubjs{i} '_EV_run' num2str(j) '_']);
-        [justHouse_regNames]=writeEVfile_justHouse(timingData, allRegModVars, evFileName);
-       
+        %        keyboard
+        
+        mkdir(infoCoeffEvFolder);
+        evFileName=fullfile(infoCoeffEvFolder, [scannedSubjs{i} '_EV_run' num2str(j) '_']);
+        [regNames_trialCoef, timings, info]=writeEVfile_trialInfoCoeffs(timingData, allRegModVars, evFileName, trialData.trialNum);
+        
+        info.blk=repmat(j, size(info.on));
+        info.on=info.on+ (info.blk-1).*blkTime;
+        if j == 1
+            subInfo=info;
+        else
+            %  keyboard
+            subInfo=catBehav(info, subInfo, true);
+        end
+        
+        
+        %         evFileName=fullfile(justHouseEvFolder, [scannedSubjs{i} '_EV_run' num2str(j) '_']);
+        %         [justHouse_regNames]=writeEVfile_justHouse(timingData, allRegModVars, evFileName);
+        
         
         % add some modulators that are useful for our regression:
         % info on right = +1, info on left = -1.
         % took info     = +1, bet          = -1
         allRegModVars.infButtonPress.vals=  ((trialData.draw.*2)-1).*((trialData.infoButtonSide.*2)-1);
         allRegModVars.infButtonPress.names={'pushedRight'};
-
-
+        
+        
         allTimings{i,j}=timings;
         allModulators{i,j}=allRegModVars;
     end
+    allInfo{i}=subInfo;
+    
+    % write a single file containing all Info events
+    
+    
+    % Create a text file with all info times:
+    infoTxt=subInfo.on
+    
+    
+    fnInfo=fullfile(infoPath, sprintf('info_times_%s.txt', scannedSubjs{i}));
+    dlmwrite(fnInfo, infoTxt, ' ');
+    
+    trialEVs=makeInfoTrialEVs(subInfo.on, TR, numTRs, subInfo.blk, scannedSubjs{i}, infoPath)
+  
 end
 
-disp(regNames');
+save beadsData.mat allTimings allModulators allInfo scannedSubjs
 
+
+
+disp(regNames');
 disp('done making EVs etc')
+
+
 %%%%%%%%%%%%%%%%%%%%% ROI Analysis %%%%%%%%%%%%%%%%%%%%%
 
 % here i'm going to look for the level of "faciness" for each 
@@ -214,8 +281,6 @@ load allBeadsTseries_2-26-14.mat
 %  run regression model on data from each ROI.
 
 % Plug in scan protocol info:
-TR=1.5;
-numTRs=400;
 allScanTimes=TR.*.5+(0:TR:TR.*(numTRs-1));
 numFixedRegs=13;  % should be 14 with infoChoice button push regressors?
 int=.1;     % we'll model ongoing events with this level of precision. 
@@ -481,8 +546,6 @@ for i = 1:length(scannedSubjs)-1
         % this is a pretty slow way to do things. Ideally, the xMat's for
         % each regressor should be created out of the loop
         
-        
-        
         for rp=1:size(subInfRegs,2)
             [B,BINT,R,RINT]=regress(sub_roiData(:,rr), rpXMat(:,:,rp));
             if B(end)==0
@@ -492,10 +555,6 @@ for i = 1:length(scannedSubjs)-1
 
             rpInfBeta(rp,rr)=B(end);
         end
-        
-        
-        
-
 
         % argh. this should not be that difficult. Just trying to
         % regularize trial regressors. 

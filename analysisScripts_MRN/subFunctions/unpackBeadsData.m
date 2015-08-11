@@ -1,5 +1,5 @@
 function [dataStruct]=unpackBeadsData(statusData)
-% keyboard
+ %keyboard
 % find the first good trial.
 k=1;
 while (isempty(statusData(k).isGoodTrial)| ~statusData(k).isGoodTrial )&k<100
@@ -17,7 +17,7 @@ if k<99
         if (isnumeric(eval(sprintf('statusData(%d).%s', k, char(allNames(j)))))||...
                 islogical(eval(sprintf('statusData(%d).%s', k, char(allNames(j))))))...
                 && (length((eval(sprintf('statusData(%d).%s', k, char(allNames(j))))))==1)...
-                && isempty(strmatch(char(allNames(j)), {'extraDrawTime', 'curr_trialInfList'})) ;
+                && isempty(strmatch(char(allNames(j)), {'extraDrawTime', 'curr_trialInfList'})); 
             eval(sprintf('dataStruct.%s=cat(1, statusData.%s);', char(allNames(j)), char(allNames(j))));
             
             %% if the length is wrong, fix it with nans.
@@ -26,14 +26,16 @@ if k<99
                 disp('problem with lengths, padding with nans')
                 eval(sprintf('dataStruct.%s=cat(1, nan(lDiff, 1), dataStruct.%s);', char(allNames(j)), char(allNames(j))))
             end
+        elseif strmatch(char(allNames(j)), {'extraDrawTime', 'curr_trialInfList'})    
+             eval(sprintf('dataStruct.%s={statusData.%s};', char(allNames(j)), char(allNames(j))));
+             eval(sprintf('dataStruct.%s=dataStruct.%s(1:ll)', char(allNames(j)), char(allNames(j)))) 
         elseif (isnumeric(eval(sprintf('statusData(%d).%s', k, char(allNames(j)))))||...
                 islogical(eval(sprintf('statusData(%d).%s', k, char(allNames(j))))))...
                 && length((eval(sprintf('statusData(%d).%s', k, char(allNames(j))))))>1;
             eval(sprintf('dataStruct.%s={statusData.%s};', char(allNames(j)), char(allNames(j))));
+            eval(sprintf('dataStruct.%s=dataStruct.%s(1:ll)', char(allNames(j)), char(allNames(j)))) 
         end
     end
-    dataStruct=straightStruct(dataStruct);
-    
 else
     dataStruct=[]
     input('missing subject data')

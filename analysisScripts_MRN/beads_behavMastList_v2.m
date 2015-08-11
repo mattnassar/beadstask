@@ -1,22 +1,40 @@
 %% load all scanner data
-
-
-
 %% get everything we need on the path.
 clear classes
 
-rootDir='/Users/mattnassar/matt_work_stuff/Matt/m_files/beadsTask/'
+rootDir='/Users/mattnassar/matt_work_stuff/Matt/m_files/beadsTask/analysisScripts_MRN/'
 cd(rootDir);
 addpath(genpath(rootDir))
+
+
+
+
+
+% TO DO:
+% 1) get some measures of choice bias 
+% 2) look at choice bias versus draw bias
+% 3) why are some people not drawing? Look block by block?
+
+
+
+
+
+
+
+
 
 
 
 %% load subject data
 %subFileDir='/Users/mattnassar/Dropbox/BeadsTaskCode/BeadsTask4';
 
-subFileDir='/Users/mattnassar/Dropbox/BeadsTaskCode/forceChoiceBeads';
+subFileDir='/Users/mattnassar/Dropbox/beadstaskcode/BeadsTask5data';
+figDir='/Users/mattnassar/Dropbox/BeadsTaskCode/figures/'
+subNames={'CC528', 'FL1136', 'FT3594', 'IA3593', 'IL3520',	'LL3555', ...
+    'NS950', 'OF3592', 'TK3556', 'TQ3543', 'TQ3600'}
 
-subNames={'IL3520',	'LL3555',	'TK3556',	'TQ3543'}
+
+
 
 % DATA FROM OUT OF SCANNER PILOT FOR FORCED DRAW VERSION:
 % subNames={'BE1829',	'KK1101',	'testbug'};
@@ -45,6 +63,8 @@ for i = 1:length(subNames)
     cd(subFileDir)
 end
 
+
+cd(figDir)
 % 'game1.block1', 'game1.block2',   'game1', 'game1',
 
 noDrawBlkNames={'noDraw_asym.block1', 'noDraw_asym.block2'};
@@ -56,8 +76,16 @@ behavSubjs=subNames;
 
 
 
+% 
+% % Testing unpackBeadsData:
+% [allSubjData.IL3520.realScannerGame1.block1.statusData.extraDrawTime]
+% 
+% 
+% data=unpackBeadsData(allSubjData.IL3520.realScannerGame1.block1.statusData)
 
-makeFigs=true;
+
+
+makeFigs=false;
 invT=1;
 ll=length(subNames)
 biasSum=nan(ll,1);
@@ -77,65 +105,19 @@ noDrawBias=nan(ll,1);
 indPoint=nan(ll,1);
 infoFitBias=nan(ll,1);
 stopFitSum=nan(ll,1);
+stopMedSum=nan(ll,1);
+
 nonUndergradVar=nan(ll,1);
 infoFitStd=nan(ll,1);
 avThresh=nan(ll,1);
 modInfoFitBias=nan(ll,1);
 modStopSum=nan(ll,1);
 defaultPlotParameters
-
 drawThresh=1;
 
-for i = 1:length(behavSubjs)
-    
+for i = 1:length(behavSubjs)    
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % ***THis whole section appears to be using the  ***    %%
-    %    wrong data... need to sort this out with arthur    %%
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%     clear data allData noDrawData allNoDrawData
-%     for j = 1:length(noDrawBlkNames)
-%         % unpack data.
-%         eval(sprintf('noDrawData=unpackBeadsData(allSubjData.%s.%s.statusData);', ...
-%             behavSubjs{i},  noDrawBlkNames{j}));
-%         if ~isempty(noDrawData)
-%             noDrawData.hiValSide=(noDrawData.curr_rewCorrRight>noDrawData.curr_rewCorrLeft)+1;
-%             ll=length(noDrawData.trialNum);
-%             noDrawData.curr_trialInfList=noDrawData.curr_trialInfList(1:ll);
-%             noDrawData.anyDraw= ~cellfun(@isempty, noDrawData.curr_trialInfList);
-%             % compute bead diff (high val beads - low value beads)
-%             if unique(noDrawData.hiValSide)==1
-%                 noDrawData.begBeadDiff=noDrawData.curr_start_tokensLeft-noDrawData.curr_start_tokensRight;
-%                 noDrawData.endBeadDiff=noDrawData.curr_tokensLeft-noDrawData.curr_tokensRight;
-%             else
-%                 noDrawData.begBeadDiff=noDrawData.curr_start_tokensRight-noDrawData.curr_start_tokensLeft;
-%                 noDrawData.endBeadDiff=noDrawData.curr_tokensRight-noDrawData.curr_tokensLeft;
-%             end
-%             
-%             if j ==1
-%                 allNoDrawData=straightStruct(noDrawData);
-%             else
-%                 allNoDrawData=catBehav(noDrawData, allNoDrawData, 1);
-%             end
-%             
-%         end
-%     end
-%     
-%     noDrawBias(i)=sum((allNoDrawData.curr_choice==allNoDrawData.hiValSide))./length(allNoDrawData.hiValSide);
-%     %% it would be good to get a better measure of the indifference point.
-%     xes=allNoDrawData.begBeadDiff;
-%     yes=allNoDrawData.curr_choice==allNoDrawData.hiValSide;
-%     % Now we have one. Logistic regression to large reward choice data,
-%     % compute value of x where logistic function = 0 (ie probability = .5)
-%     B=glmfit(xes, yes, 'binomial');  % fit logistic function to data
-%     diffs=unique(allNoDrawData.begBeadDiff);
-%     modPred=B(1)+B(2).*diffs; % get logistic predictions from model fit
-%     indPoint(i)=-B(1)./B(2);  % calculate indifference point based on fit
-    
-    
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %    real scanner task analysis
-    %    THIS FIRST BIT IS BASED ON THE INITIAL DECISION... 
-    %    SO IT DOES NOT PERTAIN TO OUR NEW FORCED CHOICE DESIGN.
+    %              real scanner task analysis
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
     for j = 1:length(blkNames)
@@ -273,34 +255,7 @@ for i = 1:length(behavSubjs)
             meanModBetLoFrac(k)=nanmean(allModData.choiceCategory(sel)==1);
         end
           
-        
-%         biasSum(i)=nanmean(allData.begBeadDiff(allData.anyDraw));
-%         biasMax(i)=nanmean(diffs(meanDrawFrac==max(meanDrawFrac)));
-%         totDrawFrac(i)=nanmean(allData.anyDraw);
-%         totModDrawFrac(i)=nanmean(allModData.choiceCategory==3);
-%         hiValDrawFrac(i)=nanmean(allData.anyDraw(isHi));
-%         loValDrawFrac(i)=nanmean(allData.anyDraw(~isHi));
-        
-%         [estimates, sse] = fitGaussPDF_wGain (allData.begBeadDiff, allData.anyDraw, []);
-%         infoFitBias(i)=estimates(1);
-%         infoFitStd(i)=estimates(2);
-%         fitProb=estimates(4)+(estimates(3).*(1/sqrt(2*pi*estimates(2)) * exp(-(diffs-estimates(1)).^2/(2*estimates(2)))));
-%         
-%         [modEstimates, sse] = fitGaussPDF_wGain (allData.begBeadDiff, allModData.choiceCategory==3, []);
-%         modInfoFitBias(i)=modEstimates(1);
-%         modFitProb=modEstimates(4)+(modEstimates(3).*(1/sqrt(2*pi*modEstimates(2)) * exp(-(diffs-modEstimates(1)).^2/(2*modEstimates(2)))));
-%         
-%         
-%         
-%         % OK, now that we have a gaussian info distribution, lets use that
-%         % to identify "thresholds" in a way that is relative insensitive to
-%         % noise. 
-%   
-%         modTEsts(i,:)=getThreshFromGaussian(modEstimates)
-%         subTEsts(i,:)=getThreshFromGaussian(estimates)
 
-  
-  
         
         if makeFigs
             close all
@@ -336,8 +291,6 @@ for i = 1:length(behavSubjs)
         
         
         
-        
-        
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %  map thresholds based on end of betting: 
         %  HERE WE WANT TO DROP TRIALS WHERE THE SUBJECT DID NOT
@@ -354,8 +307,10 @@ for i = 1:length(behavSubjs)
             hCount=histc(allData.endBeadDiff(sel), allPossDiffs);
             [estimates, sse] = fitGaussPDF_wGain (allPossDiffs', hCount, []);
             hDistFit=estimates(1);
+            hDistMed=median(allData.endBeadDiff(sel));
         else
             hDistFit=nan;
+            hDistMed=nan;
         end
         
         
@@ -364,14 +319,15 @@ for i = 1:length(behavSubjs)
             lCount=histc(allData.endBeadDiff(sel2), allPossDiffs);
             [estimates, sse] = fitGaussPDF_wGain (allPossDiffs', lCount, []);
             lDistFit=estimates(1);
+            lDistMed=median(allData.endBeadDiff(sel2));
+
         else
             lDistFit=nan;
+            lDistMed=nan;
         end
         
         stopFitSum(i)=hDistFit+lDistFit;
-        
-        
-        
+        stopMedSum(i)=hDistMed+lDistMed;        
         highStop = nanmean(allData.endBeadDiff(subDraw&(allData.hiValSide==allData.curr_choice)));
         lowStop  = nanmean(allData.endBeadDiff(subDraw&(allData.hiValSide~=allData.curr_choice)));
         % compute same thing for high and low value trials separately
@@ -383,7 +339,6 @@ for i = 1:length(behavSubjs)
         modHighStop= nanmean(allModData.endDiff(allModData.choiceCategory==3&(allModData.betSide==2)));
         modLowStop= nanmean(allModData.endDiff(allModData.choiceCategory==3&(allModData.betSide==1)));
         
-
 
 
 
@@ -451,234 +406,3 @@ saveas(gcf, 'threshVsBiasPlot.eps', 'epsc2')
 close all
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-% 
-% 
-% %% OLD ANALYSIS (FREE INFO CHOICE VERSION)
-% 
-% 
-% 
-% %%%%%%%%%%%%%%%%%%%%% GROUP ANALYSIS %%%%%%%%%%%%%%%%%%%%%
-% 
-% % quickie computation of optimal choice task behavior.
-% likeRatio=log((.6./.4).^diffs);
-% pHigh=1./(1+exp(-likeRatio))
-% evHigh=pHigh.*70;
-% evLow =(1-pHigh).*10;
-% optIndiff=nanmean([min(diffs(evHigh>evLow)) max(diffs(evHigh<evLow))])
-% 
-% 
-% 
-% % ideal:
-% % modStopSum = -7
-% % modInfoFitBias = -3.0187
-% 
-% optStopSum=-7;      % models stopping bias
-% optbiasSum=-3.0187; % this is actually the models fit bias
-% 
-% mixBias=nanmean([infoFitBias./optbiasSum; stopSum./optStopSum]);
-% modMixBias=nanmean([modInfoFitBias./optbiasSum; modStopSum./optStopSum]);
-% 
-% 
-% 
-% optMixBias=nanmean([optStopSum optbiasSum]);
-% sel=isfinite(stopSum)
-% hold on
-% plot([-4 4], [-4 4], '--k')
-% 
-% % stopFitSum is no longer relevant, right?
-% plot(stopFitSum(sel), stopSum(sel), '.b')
-% xlabel('fitStopSum')
-% ylabel('stopSum')
-% close all
-% 
-% infoFitBias(sel)
-% 
-% 
-% 
-% 
-% tt=5
-% hold on
-% plot([-tt tt], [0 0], '--k')
-% plot( [0 0], [-tt.*2 tt.*2], '--k')
-% plot(infoFitBias(sel), stopSum(sel), 'o', 'markerSize', 10, 'markerFaceColor', cbColors(2,:), 'markerEdgeColor', 'k', 'lineWidth', 1)
-% %plot(modInfoFitBias(sel), modStopSum(sel), 'o', 'markerSize', 10, 'markerFaceColor', cbColors(6,:), 'markerEdgeColor', 'k', 'lineWidth', 1)
-% %plot(modInfoFitBias(sel), modStopSum(sel), 'o', 'markerSize', 10, 'markerFaceColor', cbColors(8,:), 'markerEdgeColor', 'k', 'lineWidth', 1)
-% ylabel('Stopping point bias')
-% xlabel('Initial draw bias')
-% set(gca, 'box', 'off')
-% saveas(gcf, 'groupBiasSummary.eps', 'epsc2')
-% plot(-3.0187, -7, 'o', 'markerSize', 14, 'markerFaceColor', 'r', 'markerEdgeColor', 'k', 'lineWidth', 1)
-% saveas(gcf, 'groupBiasSummary_wOpt.eps', 'epsc2')
-% 
-% plot(modInfoFitBias(sel), modStopSum(sel), 'o', 'markerSize', 10, 'markerFaceColor', cbColors(8,:), 'markerEdgeColor', 'k', 'lineWidth', 1)
-% xlim([-5 5]);
-% ylim([-10 10]);
-% 
-% 
-% 
-% saveas(gcf, 'groupBiasSummary_wMod.eps', 'epsc2')
-% close all
-% 
-% 
-% close all
-% hold on
-% plot([-10 1], [0 0], '--k')
-% plot([0 0], [-1 1.5],  '--k')
-% % 
-% % plot([-2 -2], [-5 5], 'c')
-% nonUndergradVar=logical(nonUndergradVar);
-% 
-% [rho p]=corr(indPoint(sel)', mixBias(sel)')
-% 
-% 
-% plot(indPoint(sel), mixBias(sel), 'o', 'markerSize', 10, 'markerFaceColor', cbColors(2,:), 'markerEdgeColor', 'k', 'lineWidth', 1)
-% %plot(indPoint(nonUndergradVar), mixBias(nonUndergradVar), 'o', 'markerSize', 10, 'markerFaceColor', cbColors(3,:), 'markerEdgeColor', 'k', 'lineWidth', 1)
-% ylabel('Information bias')
-% xlabel('Indifference point')
-% set(gca, 'box', 'off')
-% saveas(gcf, 'groupBiasVsIndiffPoint.eps', 'epsc2')
-% plot(-5, 1,  'o', 'markerSize', 14, 'markerFaceColor', 'r', 'markerEdgeColor', 'k', 'lineWidth', 1)
-% saveas(gcf, 'groupBiasVsIndiffPoint_wOpt.eps', 'epsc2')
-% close all
-% 
-% 
-% 
-% 
-% 
-% 
-% % 
-% % totDrawFrac   =nan(ll);
-% % totModDrawFrac=nan(ll);
-% % totThreshDist =nan(ll);
-% % totModThreshDist=nan(ll);
-% 
-% 
-% startThreshBias=sum(subTEsts, 2);
-% startThreshDist=(subTEsts(:,1)-subTEsts(:,2));
-% 
-% plot(startThreshBias, log(startThreshDist), '.')
-% 
-% 
-% 
-% hold on
-% plot([0 1], [0 0], '--k')
-% plot(totDrawFrac(sel), mixBias(sel), 'o', 'markerSize', 10, 'markerFaceColor', cbColors(2,:), 'markerEdgeColor', 'k', 'lineWidth', 1)
-% set(gca, 'box', 'off')
-% ylabel('Information bias')
-% xlabel('Draw fraction')
-% saveas(gcf, 'drawsVsBias.eps', 'epsc2')
-% plot(totModDrawFrac(sel), modMixBias(sel), 'o', 'markerSize', 10, 'markerFaceColor', cbColors(8,:), 'markerEdgeColor', 'k', 'lineWidth', 1)
-% saveas(gcf, 'drawsVsBias_wMod.eps', 'epsc2')
-% close all
-% 
-% 
-% 
-% hold on
-% plot(totDrawFrac(sel), totThreshDist(sel), 'o', 'markerSize', 10, 'markerFaceColor', cbColors(2,:), 'markerEdgeColor', 'k', 'lineWidth', 1)
-% plot(totModDrawFrac(sel), totModThreshDist(sel), 'o', 'markerSize', 10, 'markerFaceColor', cbColors(8,:), 'markerEdgeColor', 'k', 'lineWidth', 1)
-% 
-% 
-% 
-% 
-% %% previous analysis workspace saved here:
-% %  save beadsBehavAnalysisWorkspace_2-13-14.mat
-% 
-% 
-% %% LEARNING EFFECTS ANALYSIS
-% %  LEARNING in noDraw blocks?  Not really...
-% hold on
-% plot(nanmedian(indPoint1), nanmean(indPoint2), 'o', 'markerSize', 14, 'markerFaceColor', 'r', 'markerEdgeColor', 'k', 'lineWidth', 1);
-% plot(indPoint1, indPoint2, '.')
-% plot([-10 2], [-10 2], '--k')
-% ylabel('indPoint2')
-% xlabel('indPoint1')
-% 
-% % summary of learning effects:
-% % there do not seem to be any effects of time on bias. Not by block, not by
-% % game. There are differences in draw fraction. games 2 and 3 seem to have
-% % lower drawing fraction than game 1. Game 2 makes sense... but game 3? Could be 
-% % because of timelimit but also could be learned. Learning interpretation
-% % is weakened by lack of block learning effects in any game.
-% 
-% % summary of value effects:
-% % there are not main effects of value on draw frequency or bias in games 1
-% % and 3. There are effects of value on draw frequency in game 2, as there
-% % should be. There also may be an interaction between value and bias
-% % whereby biased subjects become more biased at high values in games 2 and
-% % 3? Not clear, not enough data to tell whether this is real. 
-% 
-% 
-% 
-% 
-% % CHANGES ACROSS GAMES? 
-% % game 1
-% % stopSum1=stopSum
-% % infoFitBias1=infoFitBias;
-% % totDrawFrac1=totDrawFrac
-% % game 2
-% % stopSum2=stopSum;
-% % infoFitBias2=infoFitBias;
-% % totDrawFrac2=totDrawFrac;
-% % game 3
-% % stopSum3=stopSum;
-% % infoFitBias3=infoFitBias;
-% % totDrawFrac3=totDrawFrac;
-% 
-% 
-% % game 1 block 1
-% % stopSum4=stopSum
-% % infoFitBias4=infoFitBias;
-% % totDrawFrac4=totDrawFrac
-% % game 1 block 2
-% % stopSum5=stopSum
-% % infoFitBias5=infoFitBias;
-% % totDrawFrac5=totDrawFrac
-% 
-% 
-% 
-% 
-% 
-% 
-% % storing behavior of models with different inverse temperature settings
-% % modInfoFitBias1=modInfoFitBias;% invTemp=1
-% % modStopSum1=modStopSum;    % % invTemp=1      
-% % modInfoFitBias2=modInfoFitBias;% invTemp=10
-% % modStopSum2=modStopSum;    % % invTemp=10      
-% % 
-% % modInfoFitBias3=modInfoFitBias;% invTemp=100
-% % modStopSum3=modStopSum;    % % invTemp=100      
-% % 
-% % modInfoFitBias4=modInfoFitBias;% invTemp=.1
-% % modStopSum4=modStopSum;    % % invTemp=.1      
-% % 
-% % 
-% % modInfoFitBias5=modInfoFitBias;% invTemp=.5
-% % modStopSum5=modStopSum;    % % invTemp=.5    
-% 
-% % ideal:
-% % modStopSum = -7
-% % modInfoFitBias = -3.0187
-% 
-% x=modStopSum1;
-% y=modStopSum3;
-% minVal=min([x y])
-% maxVal=max([x y])
-% hold on
-% plot([minVal maxVal], [minVal maxVal], '--k')
-% plot(x, y, '.b')
-% plot(nanmean(x), nanmean(y), '*r');
-% 
