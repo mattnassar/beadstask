@@ -1,4 +1,0 @@
-beadstask
-=========
-
-Repository for beadstask
