@@ -7,22 +7,10 @@ cd(rootDir);
 addpath(genpath(rootDir))
 
 
-
-
-
 % TO DO:
 % 1) get some measures of choice bias 
 % 2) look at choice bias versus draw bias
 % 3) why are some people not drawing? Look block by block?
-
-
-
-
-
-
-
-
-
 
 
 %% load subject data
@@ -31,9 +19,8 @@ addpath(genpath(rootDir))
 subFileDir='/Users/mattnassar/Dropbox/beadstaskcode/BeadsTask5data';
 figDir='/Users/mattnassar/Dropbox/BeadsTaskCode/figures/'
 subNames={'CC528', 'FL1136', 'FT3594', 'IA3593', 'IL3520',	'LL3555', ...
-    'NS950', 'OF3592', 'TK3556', 'TQ3543', 'TQ3600'}
-
-
+    'NS950', 'OF3592', 'TK3556', 'TQ3543', 'TQ3600', ...
+    'BA3550', 'KQ3548', 'LL3555', 'MF3567',  'NN3554' }
 
 
 % DATA FROM OUT OF SCANNER PILOT FOR FORCED DRAW VERSION:
@@ -382,14 +369,9 @@ end
 
 disp('done with basic anlalysis')
 
-
-
-        
 mx=max(abs([stopSum; modStopSum])) +.25;
 my=max([avThresh; totModThreshDist])+.25;
 minY=min([avThresh; totModThreshDist; 0])-.25;
-
-
 
 hold on
 plot([0 0], [0 my], '--k')

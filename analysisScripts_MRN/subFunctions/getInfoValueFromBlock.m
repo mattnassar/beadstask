@@ -37,6 +37,8 @@ else
     modBehav.choiceCategory=nan(size(trialData.startRight));
     modBehav.betSide=nan(size(trialData.startRight));
     modBehav.endDiff=nan(size(trialData.startRight));
+    modBehav.choiceProbs=nan(length(trialData.startRight), 3);
+    
 end
 
 
@@ -142,6 +144,9 @@ for j=1:length(hCorrs)
             
             cumP=cumsum(pChoice);
             modBehav.choiceCategory(i)=find(rand<cumP, 1);
+            modBehav.choiceProbs(i,:)=pChoice;
+            
+            
             % if model draws, lets see when it stops drawing
             % note: model draws from true urn probabilities... these
             % are not the same as the conditional bead probabilities.

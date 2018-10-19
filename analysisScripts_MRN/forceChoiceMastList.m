@@ -1,5 +1,23 @@
 %% Code for Beads task behavioral analysis and EV file creation.
 
+% 4-18-16
+
+% store block info so we can ditch the last trial in each block. 
+
+
+% 3-22-16
+
+% added a section to look for univariate effects of house/face encoding using trial info coefficients. 
+% first pass analysis looked terrible... realized that some of the
+% coefficients are poorly estimated. you can see that by looking at the
+% variance across coefficients estimated for different voxels for a single
+% trial. High variance is indicative that there wasn't much to go on... I
+% analyzed the data using two strategies... 1=remove high variance
+% trials... 2= use a weighted regression with the weights computed
+% according to proxy variance. First strategy revealed some blobs, but the
+% motor asymmetry was not very clear... need to run the second strategy
+% again because it didn't finish.
+
 
 % 5-19-15
 
@@ -27,15 +45,22 @@ infoPath='/Users/mattnassar/Dropbox/BeadsTaskCode/EVs/infoTimes/'
 %% load subject data
 subFileDir='/Users/mattnassar/Dropbox/beadstaskcode/BeadsTask5data';
 figDir='/Users/mattnassar/Dropbox/BeadsTaskCode/figures/'
+trialCoeffDir= '~/Dropbox/BeadsTaskCode/trialCoeffs/';
+
 
 subNames={'CC528', 'FL1136', 'FT3594', 'IA3593', 'IL3520',	'LL3555', ...
-    'NS950', 'OF3592', 'TK3556', 'TQ3543', 'TQ3600'}
+    'NS950', 'OF3592', 'TK3556', 'TQ3543', 'TQ3600', 'BA3550', 'KQ3548', 'MF3567',  'NN3554' };
+
+
 
 
 
 % loop through each subject and load data, store in "allSubjData" structure
 % and save that structure so we don't need to use this slow loading code
 % again.
+
+
+clear  allSimpData
 for i = 1:length(subNames)
     fileName=fullfile(subFileDir, subNames{i});
     [allData]=beadTaskDataLoader_mrn(fileName);
@@ -45,6 +70,38 @@ for i = 1:length(subNames)
     
     % beadTaskDataLoader changes directories, so lets go back manually.
     cd(subFileDir)
+
+
+    
+    
+    
+    dat1=unpackBeadsData(allData.realScannerGame1.block1.statusData);
+    dat1.blk=ones(size(dat1.trialNum));
+    dat1=straightStruct(dat1); 
+    
+    dat2=unpackBeadsData(allData.realScannerGame1.block2.statusData);
+    dat2.blk=ones(size(dat2.trialNum)).*2;
+    dat2=straightStruct(dat2);
+ 
+    dat3=unpackBeadsData(allData.realScannerGame2.block1.statusData);
+    dat3.blk=ones(size(dat3.trialNum)).*3;
+    dat3=straightStruct(dat3);
+
+    dat4=unpackBeadsData(allData.realScannerGame2.block2.statusData);
+    dat4.blk=ones(size(dat4.trialNum)).*4;
+    dat4=straightStruct(dat4);
+
+
+    simpData=catBehav(dat2, dat1, true);
+    simpData=catBehav(dat3, simpData, true);
+    simpData=catBehav(dat4, simpData, true);       
+    simpData.subj=i.*ones(size(simpData.trialNum));
+
+    if ~exist('allSimpData')
+        allSimpData=simpData;
+    else
+        allSimpData=catBehav(simpData, allSimpData, true);
+    end
 end
 
 
@@ -129,6 +186,9 @@ for i = 1:length(scannedSubjs)
         eval(sprintf('data=unpackBeadsData(allSubjData.%s.%s.statusData);', ...
             scannedSubjs{i},  blkNames{j}));
         
+        
+        
+        
         % get model based trial regressors.
         [numSubjs, uniqueVar, timingData, trialData, regData, allRegModVars]...
             =checkBlockEfficiency(data);
@@ -191,6 +251,7 @@ for i = 1:length(scannedSubjs)
         
         allTimings{i,j}=timings;
         allModulators{i,j}=allRegModVars;
+                
     end
     allInfo{i}=subInfo;
     
@@ -205,7 +266,7 @@ for i = 1:length(scannedSubjs)
     dlmwrite(fnInfo, infoTxt, ' ');
     
     trialEVs=makeInfoTrialEVs(subInfo.on, TR, numTRs, subInfo.blk, scannedSubjs{i}, infoPath)
-  
+
 end
 
 save beadsData.mat allTimings allModulators allInfo scannedSubjs
@@ -215,6 +276,147 @@ save beadsData.mat allTimings allModulators allInfo scannedSubjs
 disp(regNames');
 disp('done making EVs etc')
 
+
+%% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%         Whole brain GLM to identify house/face encoding.           %%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Goal: 1) identify regions that encode/house face information. First pass
+% = univariate... just want to make sure we get FFA/PPA/ motor cortex
+
+% does it make sense to do this in a univariate way? I didn't smooth all
+% that much. I would still expect some effects (e.g. lateralized motor
+% activity)... but i guess it is possible that everything lives in the
+% voxel-by-voxel differences. 
+
+
+% find last trial in each block:
+
+
+isLastTrial=false(size(allSimpData.blk));
+newBlock=false(size(allSimpData.trialNum));
+for i = 1:length(allSimpData.blk)
+    if i==1 || allSimpData.trialNum(i)<allSimpData.trialNum(i-1)
+        newBlock(i)=true;
+    else
+        newBlock(i)=false;
+    end
+end
+isLastTrial([find(newBlock(2:end)); length(newBlock)])=true;
+
+
+%[isLastTrial, newBlock]
+
+
+
+% issue is not just with the last trial. 2nd trial of 3rd block is crazy
+% bad for subject number 1. Not sure what is going on there... it seems a
+% bit odd that this particular trial would be so poorly estimated. 
+
+% ditch poorly estimated trial coefficients?
+varThresh=3;
+
+
+a=dir([trialCoeffDir, '/*brainInfoTrialCoeffs.mat'])
+fns={a.name};
+
+
+firstInfo=nan(size(allSimpData.curr_trialInfList));
+for i = 1:length(allSimpData.curr_trialInfList)
+    if ~isempty(allSimpData.curr_trialInfList{i})
+        firstInfo(i)=allSimpData.curr_trialInfList{i}(1);
+    end
+end
+
+for i = 1:length(subNames)
+    abNames{i}=subNames{i}(1:5);
+end
+
+
+infoCoeff=nan(91, 109,  91, length(fns)) ;
+allSubTrialVar=nan(size(firstInfo));
+
+
+for i = 1:length(fns)
+     disp(sprintf('loading file: %s', fns{i}))       
+    trialInfoCoeffs=load(fullfile(trialCoeffDir,fns{i}));
+    % OK, have coefficients. Probably should mask with something?
+    dims=size(trialInfoCoeffs.brainTrialCoeffs);
+    selSubj=allSimpData.subj== find(strcmp(fns{i}(1:5),   abNames));
+
+    
+    % use whole brain response as a proxy for the variance on our estimate
+    % of regressors (eg... if variance across brain is crazy, the the thing
+    % is NOT well estimated:
+    clear trialVar
+    for k = 1:size(trialInfoCoeffs.brainTrialCoeffs, 4)
+        trialSnap=trialInfoCoeffs.brainTrialCoeffs(:,:,:,k);
+        trialVar(k)=nanstd(trialSnap(:));
+    end
+    
+    dynThresh=min([prctile(trialVar, 96), varThresh]);
+    sel= selSubj& isfinite(firstInfo);
+%     hold on
+%     plot(allSimpData.trialNum(selSubj& isfinite(firstInfo)))
+%     plot(trialVar, 'r')
+
+    trialVar(isLastTrial(selSubj& isfinite(firstInfo)))
+    allSubTrialVar(selSubj&  isfinite(firstInfo))=trialVar;
+    xes=meanCentX([ones(size(firstInfo(sel&allSubTrialVar<dynThresh))), firstInfo(sel&allSubTrialVar<dynThresh)]);
+    tic
+    for x= 1:dims(1)
+        x
+        for y=1:dims(2)
+            for z=1:dims(3)
+                dat=zscore(squeeze(trialInfoCoeffs.brainTrialCoeffs(x,y,z,trialVar<dynThresh)));
+                if nanstd(dat)>0
+                    %  B = regressW_mike(dat, trialVar',xes);
+                    B = regress(dat, xes);
+                    infoCoeff(x,y,z,i)=B(2);
+                end
+            end
+        end
+    end
+    toc
+end
+
+
+% look at example subject
+exCoeff=infoCoeff(:,:,:,14);
+hf_sub_nii=make_nii(exCoeff);
+view_nii(hf_sub_nii)
+clear trialInfoCoeffs
+
+
+tMap=nanmean(infoCoeff, 4)./(nanstd(infoCoeff,[],4)./sqrt(length(fns)));
+varMap=nanstd(infoCoeff,[],4);
+meanMap=nanmean(infoCoeff,4);
+
+thresh=.01;
+lb=icdf('t', thresh, 14);
+ub=icdf('t', 1-thresh, 14);
+
+    
+% OK, initial results looked like crap. But that seems to be because there
+% are some very poorly estimated trials. 
+
+hf_nii=make_nii(squeeze(tMap), 2);
+
+% save houseFaceRegression_4-19-16.mat
+
+
+save_nii(hf_nii, 'houseFaceMap.nii')
+%hf_nii.img(hf_nii.img>lb& hf_nii.img<ub)=0;
+
+scale_t=hf_nii;
+scale_t.img(scale_t.img>4)=4;
+scale_t.img(scale_t.img<-4)=-4;
+
+view_nii(scale_t)
+
+
+
+houseFaceMap=load_nii('/Users/mattnassar/Dropbox/BeadsTaskCode/BeadsTask5data/houseFaceMap.nii')
 
 %%%%%%%%%%%%%%%%%%%%% ROI Analysis %%%%%%%%%%%%%%%%%%%%%
 
@@ -241,15 +443,7 @@ disp('done making EVs etc')
 
 
 
-
-
-
 %% LOAD ROI data.
-
-
-
-
-
 
 
 load allBeadsTseries_2-26-14.mat 
@@ -294,12 +488,12 @@ blkRegs=[[onBlock; offBlock; offBlock; offBlock], ...
     [offBlock; offBlock; offBlock; onBlock]];
 
 % these variables will be built over time, growing with each new subject
-allBeadDiff  =[];
-allDiscScores=[];
-subNum       =[];
+allBeadDiff   =[];
+allDiscScores =[];
+subNum        =[];
 allZDiscScores=[];
-allInfMods   =[];
-allChoiceMods=[];
+allInfMods    =[];
+allChoiceMods =[];
 clear inSampAcc invP unbiasedAccMeasure 
 for i = 1:length(scannedSubjs)-1
     sub_roiData=nans(numTRs.*4, 22);

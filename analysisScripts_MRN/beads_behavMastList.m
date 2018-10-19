@@ -1,7 +1,11 @@
 %% load all scanner data
 clear classes
 cd /Users/mattnassar/Dropbox/BeadsTaskCode/beadsTask
-path(path, 'taskCode')
+
+
+codeDir='~/matt_work_stuff/Matt/m_files/beadstask/analysisScripts_MRN'
+addpath(genpath(codeDir))
+
 
 
 load allSubjData.mat
